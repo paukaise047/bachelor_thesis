@@ -1,0 +1,643 @@
+---
+title: "bachelor thesis"
+output: html_document
+date: "2024-04-17"
+---
+```{r Descriptive Statistics DAT}
+install.packages("tidyverse")
+library(tidyverse)
+library(stats)
+
+data <- read.csv2("DAT_Scores.csv", header = TRUE)
+
+
+# skewness function
+skewness <- function(x) {
+  n <- length(x)
+  m3 <- sum((x - mean(x, na.rm = TRUE))^3, na.rm = TRUE) / n
+  s3 <- sd(x, na.rm = TRUE)^3
+  skew <- m3 / s3
+  return(skew)
+}
+
+# kurtosis function
+kurtosis <- function(x) {
+  n <- length(x)
+  m4 <- sum((x - mean(x, na.rm = TRUE))^4, na.rm = TRUE) / n
+  s4 <- sd(x, na.rm = TRUE)^4
+  kurt <- m4 / s4 - 3
+  return(kurt)
+}
+
+
+stats <- data.frame(
+  Model = colnames(data),
+  N = sapply(data, function(x) sum(!is.na(x))),
+  Mean = sapply(data, mean, na.rm = TRUE),
+  SD = sapply(data, sd, na.rm = TRUE),
+  Min = sapply(data, min, na.rm = TRUE),
+  Max = sapply(data, max, na.rm = TRUE),
+  Skewness = sapply(data, skewness),
+  Kurtosis = sapply(data, kurtosis)
+)
+
+print(stats)
+
+
+data_long <- data %>%
+  pivot_longer(cols = everything(), names_to = "Model", values_to = "value")
+
+
+anova_result <- aov(value ~ Model, data = data_long)
+
+
+print(summary(anova_result))
+
+
+tukey_result <- TukeyHSD(anova_result)
+
+
+print(tukey_result)
+
+
+
+
+```
+
+```{r Best Iteration Iterative Collaboration Model DAT}
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+
+
+data2 <- read.csv2("DAT_bestrun.csv", header = TRUE)
+
+
+data2 <- data2 %>%
+  mutate(Iteration = 1:n())
+# reshape data to long 
+data_long <- data2 %>%
+  mutate(Iteration = 1:n()) %>%
+  gather(key = "Run", value = "Score", -Iteration)
+
+# plotting
+line_plot <- ggplot(data_long, aes(x = Iteration, y = Score, color = Run, group = Run)) +
+  geom_line() +
+  labs(title = "Scores for Each Iteration", x = "Iteration", y = "Score") +
+  theme_minimal()
+
+print(line_plot)
+
+# best iteration (highest average score)
+average_scores <- data %>%
+  rowwise() %>%
+  mutate(Average = mean(c_across(starts_with("Run")), na.rm = TRUE)) %>%
+  ungroup()
+
+
+best_iteration <- average_scores %>%
+  filter(Average == max(Average)) %>%
+  select(Iteration, Average)
+
+print(best_iteration)
+
+
+
+```
+
+```{r Graphs DAT}
+library(ggplot2)
+
+
+means <- gather(data, key = "Model", value = "Value") %>%
+  group_by(Model) %>%
+  summarize(Mean = mean(Value, na.rm = TRUE))
+
+means_plot <- ggplot(means, aes(x = Model, y = Mean)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Mean of Variables") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(means_plot)
+
+boxplot_data <- data %>%
+  gather(key = "Model", value = "value") # Using gather() to reshape the data
+
+boxplot <- ggplot(boxplot_data, aes(x = Model, y = value)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of Variables") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(boxplot)
+
+
+
+boxplot_data$Model_Category <- ifelse(boxplot_data$Model %in% c("GPT3.5", "GPT4", "Claude.AI"), "Individual Model",
+                                      ifelse(boxplot_data$Model %in% c("Claude.GPT3.5", "GPT3.5 differentAPI", "GPT3.5sameAPI"), "Iterative Collaboration",
+                                             ifelse(boxplot_data$Model %in% c("Multi.Agent"), "Multi-Agent", "Iterative Collaboration")))
+
+boxplot_data$Model_Category <- factor(boxplot_data$Model_Category, levels = c("Individual Model", "Iterative Collaboration", "Multi-Agent"))
+
+density_plot <- ggplot(boxplot_data, aes(x = value, fill = Model)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Density Plot of Variables") +
+  facet_wrap(~Model_Category, scales = "free")  # Split the plot by Model_Category
+
+print(density_plot)
+
+
+
+```
+
+```{r Descriptive Statistics AUT}
+library(tidyverse)
+library(stats)
+
+data <- read.csv2("AUT_Scores.csv", header = TRUE)
+
+# skewness function
+skewness <- function(x) {
+  n <- length(x)
+  m3 <- sum((x - mean(x, na.rm = TRUE))^3, na.rm = TRUE) / n
+  s3 <- sd(x, na.rm = TRUE)^3
+  skew <- m3 / s3
+  return(skew)
+}
+
+# kurtosis function
+kurtosis <- function(x) {
+  n <- length(x)
+  m4 <- sum((x - mean(x, na.rm = TRUE))^4, na.rm = TRUE) / n
+  s4 <- sd(x, na.rm = TRUE)^4
+  kurt <- m4 / s4 - 3
+  return(kurt)
+}
+
+stats <- data.frame(
+  Model = colnames(data),
+  N = sapply(data, function(x) sum(!is.na(x))),
+  Mean = sapply(data, mean, na.rm = TRUE),
+  SD = sapply(data, sd, na.rm = TRUE),
+  Min = sapply(data, min, na.rm = TRUE),
+  Max = sapply(data, max, na.rm = TRUE),
+  Skewness = sapply(data, skewness),
+  Kurtosis = sapply(data, kurtosis)
+)
+
+print(stats)
+
+data_long <- data %>%
+  pivot_longer(cols = everything(), names_to = "Model", values_to = "value")
+
+anova_result <- aov(value ~ Model, data = data_long)
+
+print(summary(anova_result))
+
+# tukey's test
+tukey_result <- TukeyHSD(anova_result)
+
+print(tukey_result)
+
+```
+
+```{r Best Iteration Iterative Collaboration Model AUT}
+# Load required packages
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+
+# Read the data
+data2 <- read.csv2("AUT_bestrun.csv", header = TRUE)
+
+# Add an Iteration column if not already present
+if (!"Iteration" %in% colnames(data2)) {
+  data2 <- data2 %>%
+    mutate(Iteration = 1:n())
+}
+
+# Reshape the data to long format
+data_long <- data2 %>%
+  gather(key = "Run", value = "Score", -Iteration)
+
+# Plot the line graph
+line_plot <- ggplot(data_long, aes(x = Iteration, y = Score, color = Run, group = Run)) +
+  geom_line() +
+  labs(title = "Scores for Each Iteration", x = "Iteration", y = "Score") +
+  theme_minimal()
+
+print(line_plot)
+print(best_iteration)
+
+
+
+
+```
+
+```{r Graphs AUT}
+# Load required package for visualization
+library(ggplot2)
+
+
+# Create bar plot for means
+means <- gather(data, key = "Model", value = "Value") %>%
+  group_by(Model) %>%
+  summarize(Mean = mean(Value, na.rm = TRUE))
+
+means_plot <- ggplot(means, aes(x = Model, y = Mean)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Mean of Variables") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(means_plot)
+
+# Visual Inspection: Boxplots
+boxplot_data <- data %>%
+  gather(key = "Model", value = "value") # Using gather() to reshape the data
+
+boxplot <- ggplot(boxplot_data, aes(x = Model, y = value)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of Variables") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(boxplot)
+
+
+
+boxplot_data$Model_Category <- ifelse(boxplot_data$Model %in% c("GPT3.5", "GPT4", "Claude.AI"), "Individual Model",
+                                      ifelse(boxplot_data$Model %in% c("Claude.GPT3.5", "GPT3.5 differentAPI", "GPT3.5sameAPI"), "Iterative Collaboration",
+                                             ifelse(boxplot_data$Model %in% c("Multi.Agent"), "Multi-Agent", "Iterative Collaboration")))
+
+# Convert Model_Category to a factor with custom levels
+boxplot_data$Model_Category <- factor(boxplot_data$Model_Category, levels = c("Individual Model", "Iterative Collaboration", "Multi-Agent"))
+
+# Create density plot for each variable with facets
+density_plot <- ggplot(boxplot_data, aes(x = value, fill = Model)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Density Plot of Variables") +
+  facet_wrap(~Model_Category, scales = "free")  # Split the plot by Model_Category
+
+print(density_plot)
+
+
+
+
+```
+
+```{r Lexical Analysis DAT}
+library(readr)
+
+data <- read_csv2("Lexical Analysis DAT/model_1.csv", col_names = FALSE)
+
+words <- unlist(data)
+words <- words[!is.na(words)]
+words <- tolower(words)
+
+word_counts <- table(words)
+sorted_counts <- sort(word_counts, decreasing = TRUE)
+
+top_10_words <- head(names(sorted_counts), 10)
+
+total_unique_words <- length(sorted_counts)
+
+total_words <- length(words)
+
+percentage_unique <- (total_unique_words / total_words) * 100
+
+cat("Top 10 Used Words:\n")
+for (word in top_10_words) {
+  cat(word, ": ", sorted_counts[word], "\n")
+}
+
+cat("\nTotal Different Words: ", total_unique_words, " out of ", total_words, "\n")
+cat("Percentage of Different Words: ", round(percentage_unique, 2), "%\n")
+
+
+```
+
+```{r Lexical Analysis DAT Graph}
+library(ggplot2)
+
+# create dataframe (did it myself)
+data <- data.frame(
+  Model = factor(c("GPT3.5", "GPT4", "Claude", "SR GPT3.5 same API", "SR GPT3.5/GPT3.5", "SR GPT3.5/Claude", "Multi-Agent"), 
+                 levels = c("GPT3.5", "GPT4", "Claude", "SR GPT3.5 same API", "SR GPT3.5/GPT3.5", "SR GPT3.5/Claude", "Multi-Agent")),
+  Different_Words = c(125, 149, 164, 489, 535, 421, 88),
+  Total_Words = c(700, 700, 700, 700, 700, 700, 210),
+  Percentage = c(17.86, 21.29, 23.43, 69.86, 75.53, 60.14, 41.9)
+)
+
+plot <- ggplot(data, aes(x = Model, y = Percentage, fill = Model)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Lexical Diversity DAT",
+       x = "Model",
+       y = "Percentage of Different Words (%)") +
+  geom_text(aes(label = paste0(Percentage, "%")), vjust = -0.5, color = "black")
+
+print(plot)
+
+```
+
+```{r Lexical Analysis AUT}
+library(readr)
+
+data <- read_csv2("Lexical Analysis AUT/aut_model_1.csv", col_names = FALSE)
+
+words <- unlist(data)
+words <- words[!is.na(words)]
+words <- tolower(words)
+
+word_counts <- table(words)
+
+sorted_counts <- sort(word_counts, decreasing = TRUE)
+
+top_10_words <- head(names(sorted_counts), 10)
+
+total_unique_words <- length(sorted_counts)
+
+total_words <- length(words)
+
+percentage_unique <- (total_unique_words / total_words) * 100
+
+cat("Top 10 Used Words:\n")
+for (word in top_10_words) {
+  cat(word, ": ", sorted_counts[word], "\n")
+}
+
+cat("\nTotal Different Words: ", total_unique_words, " out of ", total_words, "\n")
+cat("Percentage of Different Words: ", round(percentage_unique, 2), "%\n")
+
+```
+
+```{r Lexical Analysis AUT Graph}
+# Load the necessary library
+library(ggplot2)
+
+# Create a data frame with the given data
+data <- data.frame(
+  Model = factor(c("GPT3.5", "GPT4", "Claude", "IC GPT3.5 same API", "IC GPT3.5/GPT3.5", "IC GPT3.5/Claude", "Multi-Agent"), 
+                 levels = c("GPT3.5", "GPT4", "Claude", "IC GPT3.5 same API", "IC GPT3.5/GPT3.5", "IC GPT3.5/Claude", "Multi-Agent")),
+  Different_Words = c(125, 149, 164, 489, 535, 421, 13),
+  Total_Words = c(100, 100, 100, 100, 100, 30, 30),
+  Percentage = c(22, 18, 8, 28, 34, 30, 43.33)
+)
+
+# Create the plot
+plot <- ggplot(data, aes(x = Model, y = Percentage, fill = Model)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Lexical Diversity DAT",
+       x = "Model",
+       y = "Percentage of Different Words (%)") +
+  geom_text(aes(label = paste0(Percentage, "%")), vjust = -0.5, color = "black")
+
+# Display the plot
+print(plot)
+
+
+```
+
+```{r Creative Writing Task Analysis}
+library(irr)
+library(psych)
+ratings <- read.csv2("creative_writing_task_2_judges.csv")
+
+ratings <- data.frame(lapply(ratings, as.numeric))
+
+kappa_result <- kappa2(ratings, "unweighted")
+
+cronbach_result <- psych::alpha(ratings)
+
+print(kappa_result)
+print(cronbach_result$total)
+
+```
+
+```{r Creative Writing Task Analysis}
+library(psych)
+library(irr)
+
+ratings <- read.csv2("creative_writing_task_4_judges.csv")
+
+ratings_matrix <- as.matrix(ratings)
+
+fleiss_kappa_result <- kappam.fleiss(ratings_matrix)
+
+cronbach_result <- psych::alpha(ratings)
+
+print(fleiss_kappa_result)
+print(cronbach_result$total)
+
+
+
+```
+
+```{r SemDis}
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(psych)
+library(car)
+
+data2 <- read.csv2("semdis_scores.csv", header = TRUE)
+
+data2 <- data2 %>%
+  mutate(Iteration = 1:n())
+data_long <- data2 %>%
+  gather(key = "Model", value = "Score", -Iteration)
+
+descriptive_stats <- data_long %>%
+  group_by(Model) %>%
+  summarize(
+    Mean = mean(Score, na.rm = TRUE),
+    SD = sd(Score, na.rm = TRUE),
+    Median = median(Score, na.rm = TRUE),
+    Min = min(Score, na.rm = TRUE),
+    Max = max(Score, na.rm = TRUE),
+    Q1 = quantile(Score, 0.25, na.rm = TRUE),
+    Q3 = quantile(Score, 0.75, na.rm = TRUE)
+  )
+
+print(descriptive_stats)
+
+box_plot <- ggplot(data_long, aes(x = Model, y = Score, fill = Model)) +
+  geom_boxplot() +
+  labs(title = "Comparison of Model Scores", x = "Model", y = "Score") +
+  theme_minimal()
+
+print(box_plot)
+
+anova_model <- aov(Score ~ Model, data = data_long)
+anova_summary <- summary(anova_model)
+
+print(anova_summary)
+
+tukey_hsd <- TukeyHSD(anova_model)
+
+print(tukey_hsd)
+
+tukey_plot <- plot(tukey_hsd)
+
+print(tukey_plot)
+
+
+```
+
+```{r Descriptive statistics human ratings}
+install.packages("tidyverse")
+library(tidyverse)
+library(stats)
+
+data <- read.csv2("creative_task_human_ratings.csv", header = TRUE)
+
+
+
+# skewness function
+skewness <- function(x) {
+  n <- length(x)
+  m3 <- sum((x - mean(x, na.rm = TRUE))^3, na.rm = TRUE) / n
+  s3 <- sd(x, na.rm = TRUE)^3
+  skew <- m3 / s3
+  return(skew)
+}
+
+# kurtosis function
+kurtosis <- function(x) {
+  n <- length(x)
+  m4 <- sum((x - mean(x, na.rm = TRUE))^4, na.rm = TRUE) / n
+  s4 <- sd(x, na.rm = TRUE)^4
+  kurt <- m4 / s4 - 3
+  return(kurt)
+}
+
+stats <- data.frame(
+  Model = colnames(data),
+  N = sapply(data, function(x) sum(!is.na(x))),
+  Mean = sapply(data, mean, na.rm = TRUE),
+  SD = sapply(data, sd, na.rm = TRUE),
+  Min = sapply(data, min, na.rm = TRUE),
+  Max = sapply(data, max, na.rm = TRUE),
+  Skewness = sapply(data, skewness),
+  Kurtosis = sapply(data, kurtosis)
+)
+
+print(stats)
+
+data_long <- data %>%
+  pivot_longer(cols = everything(), names_to = "Model", values_to = "value")
+
+anova_result <- aov(value ~ Model, data = data_long)
+
+print(summary(anova_result))
+
+tukey_result <- TukeyHSD(anova_result)
+
+print(tukey_result)
+
+
+
+```
+
+```{r Graphs statistics human ratings}
+library(ggplot2)
+
+
+means <- gather(data, key = "Model", value = "Value") %>%
+  group_by(Model) %>%
+  summarize(Mean = mean(Value, na.rm = TRUE))
+
+means_plot <- ggplot(means, aes(x = Model, y = Mean)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Mean of Variables") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(means_plot)
+
+boxplot_data <- data %>%
+  gather(key = "Model", value = "value") # Using gather() to reshape the data
+
+boxplot <- ggplot(boxplot_data, aes(x = Model, y = value)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of Variables") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(boxplot)
+
+
+
+boxplot_data$Model_Category <- ifelse(boxplot_data$Model %in% c("GPT3.5", "GPT4", "Claude.AI"), "Basic Model",
+                                      ifelse(boxplot_data$Model %in% c("Claude.GPT3.5", "GPT3.5 differentAPI", "GPT3.5sameAPI"), "Self-Refinement",
+                                             ifelse(boxplot_data$Model %in% c("Multi.Agent"), "Multi-Agent", "Self-Refinement")))
+
+boxplot_data$Model_Category <- factor(boxplot_data$Model_Category, levels = c("Basic Model", "Self-Refinement", "Multi-Agent"))
+
+density_plot <- ggplot(boxplot_data, aes(x = value, fill = Model)) +
+  geom_density(alpha = 0.5) +
+  labs(title = "Density Plot of Variables") +
+  facet_wrap(~Model_Category, scales = "free")  # Split the plot by Model_Category
+
+print(density_plot)
+
+
+```
+
+```{r human ratings t-test}
+library(ggplot2)
+library(readr)
+library(tidyr)
+
+file_path <- 'creative_writing_task_ttest.csv'
+df <- read_csv2(file_path, col_names = TRUE)
+
+ai_ratings <- df[df$Model == 'AI',]
+human_ratings <- df[df$Model == 'Human',]
+
+# paired t-test
+results <- data.frame(Rater = character(),
+                      t_stat = numeric(),
+                      p_value = numeric(),
+                      stringsAsFactors = FALSE)
+
+raters <- c('Rater1', 'Rater2', 'Rater3', 'Rater4')
+
+for (rater in raters) {
+  t_test <- t.test(ai_ratings[[rater]], human_ratings[[rater]], paired = TRUE)
+  results <- rbind(results, data.frame(Rater = rater, t_stat = t_test$statistic, p_value = t_test$p.value))
+}
+
+print(results)
+
+df_long <- df %>%
+  pivot_longer(cols = starts_with("Rater"), names_to = "Rater", values_to = "Rating")
+
+ggplot(df_long, aes(x = Model, y = Rating, fill = Model)) +
+  geom_boxplot() +
+  facet_wrap(~ Rater) +
+  theme_minimal() +
+  labs(title = "Boxplot of Ratings by Raters",
+       x = "Model",
+       y = "Rating") +
+  theme(legend.position = "none")
+
+```
+
+```{r correlation analysis}
+library(readr)
+library(tidyr)
+library(corrplot)
+
+file_path <- 'creative_writing_task_ttest.csv'
+df <- read_csv2(file_path, col_names = TRUE)
+
+df <- df %>%
+  mutate(across(starts_with("Rater"), as.numeric))
+
+cor_matrix <- cor(df %>% select(starts_with("Rater")), use = "complete.obs")
+
+print(cor_matrix)
+
+corrplot(cor_matrix, method = "circle", type = "upper",
+         title = "Correlation Matrix of Raters",
+         mar = c(0, 0, 1, 0))
+
+```
