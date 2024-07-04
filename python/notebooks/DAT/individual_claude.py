@@ -7,7 +7,7 @@ load_dotenv()
 all_words = []
 
 client = anthropic.Anthropic(
-    api_key="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", )
+    api_key="INSERT YOUR API KEY HERE", )
 
 user_prompt = ("Give me 7 words that are as different from each other as possible, in all meanings and uses of the "
                "words. Rules: 1. Only single words in English. 2. Only nouns (e.g., things, objects, concepts). 3. No "
